@@ -1,20 +1,29 @@
 import express from "express";
-import { config } from "dotenv";
+import dotenv from "dotenv";
+import { bot } from "./services/telegram";
 
-config(); // Load environment variables
+dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000; // Ensure we use Railway's assigned port
 
+// Middleware
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
-// Telegram Webhook Route
-app.post("/webhook", (req, res) => {
-  console.log("Received Telegram Update:", req.body);
+// Root Route for Debugging
+app.get("/", (req, res) => {
+  res.send("✅ Telegram Video Processor is Running!");
+});
+
+// Webhook for Telegram Bot
+app.post(`/webhook/${process.env.TELEGRAM_BOT_TOKEN}`, (req, res) => {
+  bot.processUpdate(req.body);
   res.sendStatus(200);
 });
 
-// Start the server
+// Start the Server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
 });
+

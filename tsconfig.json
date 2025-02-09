@@ -1,16 +1,14 @@
 {
   "compilerOptions": {
+    "target": "ES6",
+    "module": "CommonJS",
     "outDir": "./dist",
     "rootDir": "./src",
-    "module": "CommonJS",
-    "target": "ES6",
-    "strict": true
-  }
+    "strict": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "allowImportingTsExtensions": true
+  },
+  "include": ["src/**/*"]
 }
-{
-  "files": [],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
-}
+

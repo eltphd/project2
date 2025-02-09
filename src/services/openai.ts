@@ -1,55 +1,44 @@
-import OpenAI from 'openai';
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
+import { Configuration, OpenAIApi } from "openai";
+import dotenv from "dotenv";
 
-const openai = new OpenAI({ apiKey: env.OPENAI_API_KEY });
+dotenv.config();
 
-export const generateCaption = async (prompt: string): Promise<{
-  caption: string;
-  hashtags: string[];
-  keywords: string[];
-}> => {
+const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
+
+/**
+ * Generates a social media caption using OpenAI.
+ */
+export async function generateCaption(prompt: string): Promise<string> {
   try {
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-4',
-      messages: [
-        {
-          role: 'system',
-          content: 'Generate a social media caption, hashtags, and SEO keywords for a video.',
-        },
-        {
-          role: 'user',
-          content: `Create a caption (max 150 characters), 5 relevant hashtags, and 3 SEO keywords for a video about: ${prompt}`,
-        },
-      ],
+    const response = await openai.createCompletion({
+      model: "text-davinci-003",
+      prompt: `Generate a short, engaging caption for social media: "${prompt}"`,
+      max_tokens: 50,
     });
 
-    const response = completion.choices[0].message.content;
-    const parts = response.split('\n');
-    
-    return {
-      caption: parts[0],
-      hashtags: parts[1].split(' ').filter(tag => tag.startsWith('#')),
-      keywords: parts[2].split(',').map(k => k.trim()),
-    };
+    return response?.data?.choices?.[0]?.text?.trim() || "No caption generated.";
   } catch (error) {
-    logger.error('OpenAI caption generation error:', error);
-    throw new Error('Failed to generate caption');
+    console.error("Error generating caption:", error);
+    return "Error generating caption.";
   }
-};
+}
 
-export const generateThumbnail = async (prompt: string): Promise<string> => {
+/**
+ * Generates a thumbnail image using DALL·E.
+ */
+export async function generateThumbnail(prompt: string): Promise<string> {
   try {
-    const response = await openai.images.generate({
-      model: 'dall-e-3',
-      prompt: `Create a thumbnail image for a video about: ${prompt}`,
+    const response = await openai.createImage({
+      model: "dall-e-2",
+      prompt: `Generate a stylish thumbnail image: "${prompt}"`,
       n: 1,
-      size: '1024x1024',
+      size: "512x512",
     });
 
-    return response.data[0].url;
+    return response?.data?.data?.[0]?.url || "No image generated.";
   } catch (error) {
-    logger.error('OpenAI thumbnail generation error:', error);
-    throw new Error('Failed to generate thumbnail');
+    console.error("Error generating thumbnail:", error);
+    return "Error generating thumbnail.";
   }
-};
+}
+

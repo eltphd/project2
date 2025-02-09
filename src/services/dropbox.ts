@@ -1,26 +1,37 @@
-import { Dropbox } from 'dropbox';
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
+import { Dropbox } from "dropbox";
+import fetch from "node-fetch";
+import dotenv from "dotenv";
 
-const dbx = new Dropbox({ accessToken: env.DROPBOX_ACCESS_TOKEN });
+dotenv.config();
 
-export const uploadToDropbox = async (
-  buffer: Buffer,
-  filename: string
-): Promise<string> => {
+const dbx = new Dropbox({ accessToken: process.env.DROPBOX_ACCESS_TOKEN, fetch });
+
+/**
+ * Uploads a file to Dropbox.
+ */
+export async function uploadToDropbox(fileUrl: string): Promise<string> {
   try {
-    const response = await dbx.filesUpload({
-      path: `/${filename}`,
-      contents: buffer,
+    const response = await fetch(fileUrl);
+    if (!response.ok) throw new Error("Failed to download file.");
+
+    const fileBuffer = await response.buffer();
+    const fileName = `/videos/${Date.now()}.mp4`;
+
+    const uploadResponse = await dbx.filesUpload({
+      path: fileName,
+      contents: fileBuffer,
+      mode: { ".tag": "add" },
     });
 
-    const shareResponse = await dbx.sharingCreateSharedLink({
-      path: response.result.path_display,
+    if (!uploadResponse.result.path_display) throw new Error("Dropbox upload failed.");
+    
+    const sharedLinkResponse = await dbx.sharingCreateSharedLinkWithSettings({
+      path: uploadResponse.result.path_display,
     });
 
-    return shareResponse.result.url.replace('dl=0', 'dl=1');
+    return sharedLinkResponse.result.url.replace("?dl=0", "?raw=1");
   } catch (error) {
-    logger.error('Dropbox upload error:', error);
-    throw new Error('Failed to upload file to Dropbox');
+    console.error("Error uploading to Dropbox:", error);
+    throw new Error("Failed to upload to Dropbox.");
   }
-};
+}

@@ -1,44 +1,25 @@
-import { Configuration, OpenAIApi } from "openai";
-import dotenv from "dotenv";
+import OpenAI from "openai";
 
-dotenv.config();
+const openai = new OpenAI({
+  apiKey: process.env.OPENAI_API_KEY!,
+});
 
-const openai = new OpenAIApi(new Configuration({ apiKey: process.env.OPENAI_API_KEY }));
-
-/**
- * Generates a social media caption using OpenAI.
- */
 export async function generateCaption(prompt: string): Promise<string> {
-  try {
-    const response = await openai.createCompletion({
-      model: "text-davinci-003",
-      prompt: `Generate a short, engaging caption for social media: "${prompt}"`,
-      max_tokens: 50,
-    });
+  const response = await openai.chat.completions.create({
+    model: "gpt-4",
+    messages: [{ role: "system", content: prompt }],
+  });
 
-    return response?.data?.choices?.[0]?.text?.trim() || "No caption generated.";
-  } catch (error) {
-    console.error("Error generating caption:", error);
-    return "Error generating caption.";
-  }
+  return response.choices[0]?.message?.content || "No caption generated.";
 }
 
-/**
- * Generates a thumbnail image using DALL·E.
- */
 export async function generateThumbnail(prompt: string): Promise<string> {
-  try {
-    const response = await openai.createImage({
-      model: "dall-e-2",
-      prompt: `Generate a stylish thumbnail image: "${prompt}"`,
-      n: 1,
-      size: "512x512",
-    });
+  const response = await openai.images.generate({
+    model: "dall-e-3",
+    prompt: prompt,
+    n: 1,
+    size: "1024x1024",
+  });
 
-    return response?.data?.data?.[0]?.url || "No image generated.";
-  } catch (error) {
-    console.error("Error generating thumbnail:", error);
-    return "Error generating thumbnail.";
-  }
+  return response.data[0]?.url || "No thumbnail generated.";
 }
-

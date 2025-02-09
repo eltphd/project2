@@ -1,48 +1,41 @@
-import TelegramBot from 'node-telegram-bot-api';
-import { env } from '../config/env';
-import { logger } from '../utils/logger';
-import { processVideo } from '../processors/videoProcessor';
+import TelegramBot from "node-telegram-bot-api";
+import { processVideo } from "../processors/videoProcessor";
+import { env } from "../config/env";
+import { logger } from "../utils/logger";
 
-const bot = new TelegramBot(env.TELEGRAM_BOT_TOKEN, {
-  polling: !env.WEBHOOK_URL,
-  webHook: env.WEBHOOK_URL ? { port: 8443 } : undefined,
-});
+export const bot = new TelegramBot(env.TELEGRAM_BOT_TOKEN, { polling: true });
 
-export const initializeTelegramBot = () => {
-  bot.on('message', async (msg) => {
-    try {
-      const video = msg.video || (msg.document?.mime_type?.startsWith('video/') ? msg.document : null);
-      
-      if (!video) {
-        await bot.sendMessage(msg.chat.id, 'Please send a video file.');
-        return;
-      }
+bot.on("message", async (msg) => {
+  try {
+    if (msg.video) {
+      await bot.sendMessage(msg.chat.id, "📥 Processing your video...");
 
-      await bot.sendMessage(msg.chat.id, 'Processing your video...');
-      
       const result = await processVideo({
-        fileId: video.file_id,
+        fileId: msg.video.file_id,
         chatId: msg.chat.id,
-        prompt: msg.caption || '',
-        bot,
       });
 
-      if (result.status === 'processing') {
+      if (result.status === "completed" && result.data) {
         await bot.sendMessage(
           msg.chat.id,
-          'Your video is being processed. You will receive a notification when it\'s ready.'
+          `✅ Video processed!\n📹 ${result.data.videoUrl}`
+        );
+      } else {
+        await bot.sendMessage(
+          msg.chat.id,
+          "⚠️ Video processing is still ongoing. Please wait."
         );
       }
-    } catch (error) {
-      logger.error('Error processing message:', error);
+    } else {
       await bot.sendMessage(
         msg.chat.id,
-        'Sorry, there was an error processing your video. Please try again later.'
+        "❌ Please send a video file for processing."
       );
     }
-  });
+  } catch (error) {
+    logger.error("Telegram bot error:", error);
+    await bot.sendMessage(msg.chat.id, "❌ An error occurred. Please try again.");
+  }
+});
 
-  logger.info('Telegram bot initialized');
-};
-
-export { bot };
+logger.info("🤖 Telegram bot is running...");

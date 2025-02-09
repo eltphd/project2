@@ -1,7 +1,6 @@
-import axios from "axios";
-import { bot } from "../services/telegram";
-import { uploadToDropbox } from "../services/dropbox";
 import { generateCaption, generateThumbnail } from "../services/openai";
+import { uploadToDropbox } from "../services/dropbox";
+import { bot } from "../services/telegram";
 import { logger } from "../utils/logger";
 
 interface ProcessVideoParams {
@@ -26,19 +25,20 @@ export async function processVideo({ fileId, chatId, prompt }: ProcessVideoParam
   try {
     // Get file path from Telegram API
     const fileUrl = `https://api.telegram.org/bot${process.env.TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`;
-    const fileResponse = await axios.get(fileUrl);
+    const fileResponse = await fetch(fileUrl);
+    const fileData = await fileResponse.json();
 
-    if (!fileResponse.data.ok) {
+    if (!fileData.ok) {
       throw new Error("Failed to fetch file path from Telegram API.");
     }
 
-    const filePath = fileResponse.data.result.file_path;
+    const filePath = fileData.result.file_path;
     if (!filePath) {
       throw new Error("File path is missing.");
     }
 
     const downloadUrl = `https://api.telegram.org/file/bot${process.env.TELEGRAM_BOT_TOKEN}/${filePath}`;
-    
+
     // Upload video to Dropbox
     const videoUrl = await uploadToDropbox(downloadUrl);
 
@@ -59,4 +59,3 @@ export async function processVideo({ fileId, chatId, prompt }: ProcessVideoParam
     return { status: "processing" };
   }
 }
-

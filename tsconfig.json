@@ -1,14 +1,20 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "module": "CommonJS",
-    "outDir": "./dist",
-    "rootDir": "./src",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "node",  // ✅ Fix for JSON imports
     "strict": true,
+    "rootDir": "src",
+    "outDir": "dist",
     "esModuleInterop": true,
-    "jsx": "react-jsx",
-    "allowImportingTsExtensions": true
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "noEmit": true,
+    "jsx": "react-jsx"
   },
-  "include": ["src/**/*"]
+  "include": ["src"],
+  "exclude": ["node_modules", "dist"]
 }
 
